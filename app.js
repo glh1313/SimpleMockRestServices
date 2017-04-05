@@ -4,14 +4,16 @@ let http = require('http');
 let fs = require('fs');
 let async = require('async');
 let path = require('path');
+let chokidar = require('chokidar');
 
 
 function start () {
-    let composed = async.compose(createMockingService, openLogFile, loadConfig, setParams);
+    let composed = async.compose(createMockingService, startFileWatch, openLogFile, loadConfig, setParams);
     let port = 3000;
     let file = './config.json';
     let outputFile = './log.txt';
     let fileDelimiter = null;
+    let config = null;
 
     composed(null, function (error, results) {
         if (error) {
@@ -51,10 +53,9 @@ function start () {
     }
 
     function loadConfig (params, callback) {
-
         function handleFile (error, fileData) {
-            let returnData = error || JSON.parse(fileData);
-            callback(error, returnData);
+            config = error || JSON.parse(fileData);
+            callback(error, config);
         }
 
         fs.readFile(file, handleFile);
@@ -73,7 +74,7 @@ function start () {
         }
     }
 
-    function createMockingService (config, callback) {
+    function createMockingService (params, callback) {
         function handleRequest(request, response){
             let url = request.url.slice(1);
             if (config[url]) {
@@ -95,6 +96,21 @@ function start () {
         server.listen(port, function () {
             callback(null, "Server listening on: http://localhost:" + port);
         });
+    }
+
+    function startFileWatch (params, callback) {
+        function handleChangeInFile (fileName) {
+            loadConfig(null, function () {
+                console.log('A updated configuration file was loaded');
+            });
+        }
+
+        chokidar.watch(file, {
+            ignored: /(^|[\/\\])\../,
+            persistent: true
+        }).on('change', handleChangeInFile.bind(this));
+
+        callback(null, params);
     }
 }
 
