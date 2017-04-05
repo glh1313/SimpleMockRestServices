@@ -1,0 +1,24 @@
+{
+  "getname": {
+    "GET": {
+      "statusCode": 200,
+      "returnValue": {
+        "first": "Joe",
+        "last": "Blow"
+      }
+    }
+  },
+
+  "addname": {
+    "POST": {
+      "statusCode": 200
+    }
+  },
+
+  "getstring": {
+    "GET": {
+      "statusCode": 200,
+      "returnValue": "Test for a string"
+    }
+  }
+}
