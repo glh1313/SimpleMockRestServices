@@ -7,9 +7,11 @@ let path = require('path');
 
 
 function start () {
-    let composed = async.compose(creatMockingService, loadConfig, setParams);
+    let composed = async.compose(createMockingService, openLogFile, loadConfig, setParams);
     let port = 3000;
     let file = './config.json';
+    let outputFile = './log.txt';
+    let fileDelimiter = null;
 
     composed(null, function (error, results) {
         if (error) {
@@ -30,8 +32,22 @@ function start () {
 
         file = argv.file || file;
         port = argv.port || port;
+        outputFile = argv.output || outputFile;
 
         callback(null, null);
+    }
+
+    function openLogFile (params, callback) {
+        let outPath = path.resolve(outputFile);
+        if (outputFile) {
+            fs.open(outPath, 'w', function (error, fd) {
+                if (!error) {
+                    fileDelimiter = fd;
+                }
+
+                callback(error, params);
+            });
+        }
     }
 
     function loadConfig (params, callback) {
@@ -44,7 +60,20 @@ function start () {
         fs.readFile(file, handleFile);
     }
 
-    function creatMockingService (config, callback) {
+    function logToFile (message) {
+        let timeStamp = new Date().toUTCString();
+        let outgoingMessage = timeStamp + '\t' + message + '\n';
+
+        if (fileDelimiter) {
+            fs.write(fileDelimiter, outgoingMessage, function (error, written, string) {
+                if (error) {
+                    console.error('Unable to write to file ' + outputFile);
+                }
+            });
+        }
+    }
+
+    function createMockingService (config, callback) {
         function handleRequest(request, response){
             let url = request.url.slice(1);
             if (config[url]) {
@@ -52,9 +81,12 @@ function start () {
                 let returnValue = (typeof returnResponse.returnValue === "string") ? returnResponse.returnValue : JSON.stringify(returnResponse.returnValue);
                 response.statusCode = returnResponse.statusCode;
                 response.end(returnValue);
+
+                logToFile('Requested URL: ' + request.url + '\tReturned status code: ' + response.statusCode + '\tReturn value: ' + returnValue);
             } else {
                 response.statusCode = 404;
                 response.end();
+                logToFile('Requested URL: ' + request.url + '\tReturned status code: ' + response.statusCode + '\tURL is not configured');
             }
         }
 
