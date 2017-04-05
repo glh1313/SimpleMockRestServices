@@ -61,7 +61,7 @@ function start () {
         let server = http.createServer(handleRequest);
 
         server.listen(port, function () {
-            callback(null, "Server listening on: http://localhost:%s", port);
+            callback(null, "Server listening on: http://localhost:" + port);
         });
     }
 }
