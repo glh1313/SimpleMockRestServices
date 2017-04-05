@@ -77,7 +77,7 @@ function start () {
     function createMockingService (params, callback) {
         function handleRequest(request, response){
             let url = request.url.slice(1);
-            if (config[url]) {
+            if (config[url] && config[url][request.method]) {
                 let returnResponse = config[url][request.method];
                 let returnValue = (typeof returnResponse.returnValue === "string") ? returnResponse.returnValue : JSON.stringify(returnResponse.returnValue);
                 response.statusCode = returnResponse.statusCode;
